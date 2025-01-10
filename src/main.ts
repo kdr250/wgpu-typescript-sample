@@ -1,6 +1,27 @@
 import vertexShader from './shader/vertex.wgsl?raw'
 import fragmentShader from './shader/fragment.wgsl?raw'
 
+function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURenderPipeline) {
+    const commandEncoder = device.createCommandEncoder();
+    const textureView = context.getCurrentTexture().createView();
+    const renderPassDescriptor: GPURenderPassDescriptor = {
+        colorAttachments: [
+            {
+                view: textureView,
+                clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                loadOp: 'clear',
+                storeOp: 'store',
+            },
+        ],
+    };
+    const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+    passEncoder.setPipeline(pipeline);
+    passEncoder.draw(3, 1, 0, 0);
+    passEncoder.end();
+
+    device.queue.submit([commandEncoder.finish()]);
+}
+
 async function main() {
     const canvas = document.querySelector('canvas');
     if (!canvas) {
@@ -53,6 +74,8 @@ async function main() {
             topology: 'triangle-list'
         },
     });
+
+    frame(device, context, pipeline);
 }
 
 main();
