@@ -66,7 +66,7 @@ async function main() {
             entryPoint: 'main',
             targets: [
                 {
-                    format: presentationFormat,
+                    format: presentationFormat, // @location(0) in fragment shader
                 }
             ]
         },
