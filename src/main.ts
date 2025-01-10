@@ -1,3 +1,5 @@
+import vertexShader from './shader/vertex.wgsl?raw'
+import fragmentShader from './shader/fragment.wgsl?raw'
 
 async function main() {
     const canvas = document.querySelector('canvas');
@@ -17,14 +19,39 @@ async function main() {
         throw new Error();
     }
 
-    const g_device = await g_adapter.requestDevice();
+    const device = await g_adapter.requestDevice();
 
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 
     context.configure({
-        device: g_device,
+        device: device,
         format: presentationFormat,
         alphaMode: 'opaque',
+    });
+
+    // create a render pipeline
+    const pipeline = device.createRenderPipeline({
+        layout: 'auto',
+        vertex: {
+            module: device.createShaderModule({
+                code: vertexShader,
+            }),
+            entryPoint: 'main',
+        },
+        fragment: {
+            module: device.createShaderModule({
+                code: fragmentShader,
+            }),
+            entryPoint: 'main',
+            targets: [
+                {
+                    format: presentationFormat,
+                }
+            ]
+        },
+        primitive: {
+            topology: 'triangle-list'
+        },
     });
 }
 
