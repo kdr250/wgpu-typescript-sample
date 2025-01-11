@@ -66,6 +66,13 @@ async function main() {
         1,  1, 0, 1,    1, 1, 0, 1,
     ]);
 
+    // create a vertex buffer from the cube data
+    const verticesBuffer = device.createBuffer({
+        size: quadVertexArray.byteLength,
+        usage: GPUBufferUsage.VERTEX,
+        mappedAtCreation : true,
+    });
+
     // create a render pipeline
     const pipeline = device.createRenderPipeline({
         layout: 'auto',
