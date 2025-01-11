@@ -73,6 +73,9 @@ async function main() {
         mappedAtCreation : true,
     });
 
+    new Float32Array(verticesBuffer.getMappedRange()).set(quadVertexArray);
+    verticesBuffer.unmap();
+
     // create a render pipeline
     const pipeline = device.createRenderPipeline({
         layout: 'auto',
