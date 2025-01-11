@@ -84,6 +84,23 @@ async function main() {
                 code: vertexShader,
             }),
             entryPoint: 'main',
+            buffers: [
+                {
+                    arrayStride: quadVertexSize,
+                    attributes: [
+                        {
+                            shaderLocation: 0,
+                            offset: quadPositionOffset,
+                            format: 'float32x4',
+                        },
+                        {
+                            shaderLocation: 1,
+                            offset: quadColorOffset,
+                            format: 'float32x4',
+                        },
+                    ],
+                },
+            ],
         },
         fragment: {
             module: device.createShaderModule({
