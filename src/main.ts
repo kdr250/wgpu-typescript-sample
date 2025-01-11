@@ -1,7 +1,7 @@
 import vertexShader from './shader/vertex.wgsl?raw'
 import fragmentShader from './shader/fragment.wgsl?raw'
 
-function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURenderPipeline) {
+function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURenderPipeline, verticesBuffer: GPUBuffer, quadVertexCount: number) {
     const commandEncoder = device.createCommandEncoder();
     const textureView = context.getCurrentTexture().createView();
     const renderPassDescriptor: GPURenderPassDescriptor = {
@@ -16,7 +16,8 @@ function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURender
     };
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
     passEncoder.setPipeline(pipeline);
-    passEncoder.draw(3, 1, 0, 0);
+    passEncoder.setVertexBuffer(0, verticesBuffer);
+    passEncoder.draw(quadVertexCount, 1, 0, 0);
     passEncoder.end();
 
     device.queue.submit([commandEncoder.finish()]);
@@ -118,7 +119,7 @@ async function main() {
         },
     });
 
-    frame(device, context, pipeline);
+    frame(device, context, pipeline, verticesBuffer, quadVertexCount);
 }
 
 main();
