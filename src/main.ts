@@ -50,6 +50,22 @@ async function main() {
         alphaMode: 'opaque',
     });
 
+    // create vertex buffer
+    const quadVertexSize = 4 * 8;  // Byte size of a vertex
+    const quadPositionOffset = 4 * 0;  // Byte offset of quad vertex position attribute
+    const quadColorOffset = 4 * 4;
+    const quadVertexCount = 6;
+
+    const quadVertexArray = new Float32Array([
+        // float4 position, float4 color
+        -1,  1, 0, 1,   0, 1, 0, 1,
+        -1, -1, 0, 1,   0, 0, 0, 1,
+        1, -1, 0, 1,    1, 0, 0, 1,
+        -1,  1, 0, 1,   0, 1, 0, 1,
+        1, -1, 0, 1,    1, 0, 0, 1,
+        1,  1, 0, 1,    1, 1, 0, 1,
+    ]);
+
     // create a render pipeline
     const pipeline = device.createRenderPipeline({
         layout: 'auto',
