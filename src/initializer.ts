@@ -35,39 +35,39 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
     const pipeline = device.createRenderPipeline({
         layout: 'auto',
         vertex: {
-            module: device.createShaderModule({code: vertexShader}),
+            module: device.createShaderModule({ code: vertexShader }),
             entryPoint: 'main',
             buffers: [
-            {
-                // 配列の要素間の距離をバイト単位で指定します。
-                arrayStride: quadVertexSize,
+                {
+                    // 配列の要素間の距離をバイト単位で指定します。
+                    arrayStride: quadVertexSize,
 
-                // 頂点バッファの属性を指定します。
-                attributes: [
-                {
-                    // position
-                    shaderLocation: 0, // @location(0) in vertex shader
-                    offset: quadPositionOffset,
-                    format: 'float32x4',
+                    // 頂点バッファの属性を指定します。
+                    attributes: [
+                        {
+                            // position
+                            shaderLocation: 0, // @location(0) in vertex shader
+                            offset: quadPositionOffset,
+                            format: 'float32x4',
+                        },
+                        {
+                            // color
+                            shaderLocation: 1, // @location(1) in vertex shader
+                            offset: quadColorOffset,
+                            format: 'float32x4',
+                        },
+                    ],
                 },
-                {
-                    // color
-                    shaderLocation: 1, // @location(1) in vertex shader
-                    offset: quadColorOffset,
-                    format: 'float32x4',
-                },
-                ],
-            },
             ],
         },
         fragment: {
-            module: device.createShaderModule({code: fragmentShader}),
+            module: device.createShaderModule({ code: fragmentShader }),
             entryPoint: 'main',
             targets: [
-            // 0
-            { // @location(0) in fragment shader
-                format: presentationFormat,
-            },
+                // 0
+                { // @location(0) in fragment shader
+                    format: presentationFormat,
+                },
             ],
         },
         primitive: {
@@ -93,6 +93,13 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
 
     new Uint16Array(indicesBuffer.getMappedRange()).set(quadIndexArray);
     indicesBuffer.unmap();
+
+    // Create uniform buffer
+    const uniformBufferSize = 4 * 16 * 3; // 4x4 matrix * 3
+    const uniformBuffer = device.createBuffer({
+        size: uniformBufferSize,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
 
     return { context, pipeline, verticesBuffer, indicesBuffer };
 }
