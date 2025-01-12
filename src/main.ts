@@ -1,7 +1,7 @@
 import vertexShader from './shader/vertex.wgsl?raw'
 import fragmentShader from './shader/fragment.wgsl?raw'
 
-function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURenderPipeline, verticesBuffer: GPUBuffer, quadVertexCount: number) {
+function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURenderPipeline, verticesBuffer: GPUBuffer, quadVertexCount: number, indicesBuffer: GPUBuffer, quadIndexArray: Uint16Array<ArrayBuffer>) {
     const commandEncoder = device.createCommandEncoder();
     const textureView = context.getCurrentTexture().createView();
     const renderPassDescriptor: GPURenderPassDescriptor = {
@@ -17,7 +17,8 @@ function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURender
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
     passEncoder.setPipeline(pipeline);
     passEncoder.setVertexBuffer(0, verticesBuffer);
-    passEncoder.draw(quadVertexCount, 1, 0, 0);
+    passEncoder.setIndexBuffer(indicesBuffer, 'uint16');
+    passEncoder.drawIndexed(quadIndexArray.length);
     passEncoder.end();
 
     device.queue.submit([commandEncoder.finish()]);
@@ -61,8 +62,6 @@ async function main() {
         // float4 position, float4 color
         -1,  1, 0, 1,   0, 1, 0, 1,
         -1, -1, 0, 1,   0, 0, 0, 1,
-        1, -1, 0, 1,    1, 0, 0, 1,
-        -1,  1, 0, 1,   0, 1, 0, 1,
         1, -1, 0, 1,    1, 0, 0, 1,
         1,  1, 0, 1,    1, 1, 0, 1,
     ]);
@@ -131,7 +130,7 @@ async function main() {
         },
     });
 
-    frame(device, context, pipeline, verticesBuffer, quadVertexCount);
+    frame(device, context, pipeline, verticesBuffer, quadVertexCount, indicesBuffer, quadIndexAray);
 }
 
 main();
