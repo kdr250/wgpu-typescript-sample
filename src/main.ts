@@ -77,6 +77,9 @@ async function main() {
     new Float32Array(verticesBuffer.getMappedRange()).set(quadVertexArray);
     verticesBuffer.unmap();
 
+    // create index buffer
+    const quadIndexAray = new Uint16Array([0, 1, 2, 0, 2, 3]);
+
     // create a render pipeline
     const pipeline = device.createRenderPipeline({
         layout: 'auto',
