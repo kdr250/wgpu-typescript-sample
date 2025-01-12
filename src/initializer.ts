@@ -1,5 +1,6 @@
-import vertexShader from './shader/vertex.wgsl?raw'
-import fragmentShader from './shader/fragment.wgsl?raw'
+import { mat4, vec3 } from 'gl-matrix';
+import vertexShader from './shader/vertex.wgsl?raw';
+import fragmentShader from './shader/fragment.wgsl?raw';
 
 type InitializationInput = {
     canvas: HTMLCanvasElement,
@@ -102,6 +103,39 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
     });
 
     return { context, pipeline, verticesBuffer, indicesBuffer };
+}
+
+function getTransformationMatrix(device: GPUDevice, uniformBuffer: GPUBuffer) {
+    const projectionMatrix = mat4.create();
+    mat4.perspective(projectionMatrix, (2 * Math.PI) / 5, 1, 1, 100.0);
+    device.queue.writeBuffer(
+        uniformBuffer,
+        4 * 16 * 0,
+        projectionMatrix.buffer,
+        projectionMatrix.byteOffset,
+        projectionMatrix.byteLength
+    );
+
+    const viewMatrix = mat4.create();
+    mat4.translate(viewMatrix, viewMatrix, vec3.fromValues(0, 0, -4));
+    device.queue.writeBuffer(
+        uniformBuffer,
+        4 * 16 * 1,
+        viewMatrix.buffer,
+        viewMatrix.byteOffset,
+        viewMatrix.byteLength
+    );
+
+    const worldMatrix = mat4.create();
+    const now = Date.now() / 1000;
+    mat4.rotate(worldMatrix, worldMatrix, 1, vec3.fromValues(Math.sin(now), Math.cos(now), 0));
+    device.queue.writeBuffer(
+        uniformBuffer,
+        4 * 16 * 2,
+        worldMatrix.buffer,
+        worldMatrix.byteOffset,
+        worldMatrix.byteLength
+    );
 }
 
 export { initialize };
