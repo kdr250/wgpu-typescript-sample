@@ -80,6 +80,12 @@ async function main() {
     // create index buffer
     const quadIndexAray = new Uint16Array([0, 1, 2, 0, 2, 3]);
 
+    const indicesBuffer = device.createBuffer({
+        size: quadIndexAray.byteLength,
+        usage: GPUBufferUsage.INDEX,
+        mappedAtCreation: true,
+    });
+
     // create a render pipeline
     const pipeline = device.createRenderPipeline({
         layout: 'auto',
