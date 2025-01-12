@@ -102,6 +102,19 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
+    // Create bind group
+    const bindGroup = device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [
+            {
+                binding: 0, // @binding(0) in shader
+                resource: {
+                    buffer: uniformBuffer
+                },
+            },
+        ],
+    });
+
     return { context, pipeline, verticesBuffer, indicesBuffer };
 }
 
