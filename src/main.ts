@@ -1,136 +1,50 @@
-import vertexShader from './shader/vertex.wgsl?raw'
-import fragmentShader from './shader/fragment.wgsl?raw'
-
-function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURenderPipeline, verticesBuffer: GPUBuffer, quadVertexCount: number, indicesBuffer: GPUBuffer, quadIndexArray: Uint16Array<ArrayBuffer>) {
-    const commandEncoder = device.createCommandEncoder();
-    const textureView = context.getCurrentTexture().createView();
-    const renderPassDescriptor: GPURenderPassDescriptor = {
-        colorAttachments: [
-            {
-                view: textureView,
-                clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-                loadOp: 'clear',
-                storeOp: 'store',
-            },
-        ],
-    };
-    const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-    passEncoder.setPipeline(pipeline);
-    passEncoder.setVertexBuffer(0, verticesBuffer);
-    passEncoder.setIndexBuffer(indicesBuffer, 'uint16');
-    passEncoder.drawIndexed(quadIndexArray.length);
-    passEncoder.end();
-
-    device.queue.submit([commandEncoder.finish()]);
-}
+import { initialize } from './initializer';
+import { drawCallback } from './frame';
 
 async function main() {
-    const canvas = document.querySelector('canvas');
-    if (!canvas) {
-        throw new Error();
-    }
 
-    // WebGPUコンテキストの取得
-    const context = canvas.getContext('webgpu') as GPUCanvasContext | null;
-    if (!context) {
-        throw new Error();
-    }
-
-    // deviceの取得
-    const g_adapter = await navigator.gpu.requestAdapter();
-    if (!g_adapter) {
-        throw new Error();
-    }
-
-    const device = await g_adapter.requestDevice();
-
-    const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-
-    context.configure({
-        device: device,
-        format: presentationFormat,
-        alphaMode: 'opaque',
-    });
-
-    // create vertex buffer
-    const quadVertexSize = 4 * 8;  // Byte size of a vertex
-    const quadPositionOffset = 4 * 0;  // Byte offset of quad vertex position attribute
-    const quadColorOffset = 4 * 4;
-    const quadVertexCount = 6;
+    const quadVertexSize = 4 * 8; // Byte size of one vertex.
+    const quadPositionOffset = 4 * 0;
+    const quadColorOffset = 4 * 4; // Byte offset of cube vertex color attribute.
 
     const quadVertexArray = new Float32Array([
         // float4 position, float4 color
         -1,  1, 0, 1,   0, 1, 0, 1,
         -1, -1, 0, 1,   0, 0, 0, 1,
-        1, -1, 0, 1,    1, 0, 0, 1,
-        1,  1, 0, 1,    1, 1, 0, 1,
+        1, -1, 0, 1,   1, 0, 0, 1,
+        1,  1, 0, 1,   1, 1, 0, 1,
     ]);
 
-    // create a vertex buffer from the cube data
-    const verticesBuffer = device.createBuffer({
-        size: quadVertexArray.byteLength,
-        usage: GPUBufferUsage.VERTEX,
-        mappedAtCreation : true,
+    const quadIndexArray = new Uint16Array([0, 1, 2, 0, 2, 3]);
+
+    const canvas = document.querySelector('canvas');
+    if (!canvas) {
+        throw new Error();
+    }
+
+    // deviceの取得
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) {
+        throw new Error();
+    }
+    const device = await adapter.requestDevice();
+
+    const initResult = await initialize({
+        canvas,
+        device,
+        quadVertexSize,
+        quadPositionOffset,
+        quadColorOffset,
+        quadVertexArray,
+        quadIndexArray,
     });
 
-    new Float32Array(verticesBuffer.getMappedRange()).set(quadVertexArray);
-    verticesBuffer.unmap();
+    const { context, pipeline, verticesBuffer, indicesBuffer } = initResult;
 
-    // create index buffer
-    const quadIndexAray = new Uint16Array([0, 1, 2, 0, 2, 3]);
+    const drawInput = {device, context, pipeline, verticesBuffer, indicesBuffer, quadIndexArray};
+    const callback = drawCallback(drawInput);
 
-    const indicesBuffer = device.createBuffer({
-        size: quadIndexAray.byteLength,
-        usage: GPUBufferUsage.INDEX,
-        mappedAtCreation: true,
-    });
-
-    new Uint16Array(indicesBuffer.getMappedRange()).set(quadIndexAray);
-    indicesBuffer.unmap();
-
-    // create a render pipeline
-    const pipeline = device.createRenderPipeline({
-        layout: 'auto',
-        vertex: {
-            module: device.createShaderModule({
-                code: vertexShader,
-            }),
-            entryPoint: 'main',
-            buffers: [
-                {
-                    arrayStride: quadVertexSize,
-                    attributes: [
-                        {
-                            shaderLocation: 0,
-                            offset: quadPositionOffset,
-                            format: 'float32x4',
-                        },
-                        {
-                            shaderLocation: 1,
-                            offset: quadColorOffset,
-                            format: 'float32x4',
-                        },
-                    ],
-                },
-            ],
-        },
-        fragment: {
-            module: device.createShaderModule({
-                code: fragmentShader,
-            }),
-            entryPoint: 'main',
-            targets: [
-                {
-                    format: presentationFormat, // @location(0) in fragment shader
-                }
-            ]
-        },
-        primitive: {
-            topology: 'triangle-list'
-        },
-    });
-
-    frame(device, context, pipeline, verticesBuffer, quadVertexCount, indicesBuffer, quadIndexAray);
+    requestAnimationFrame(callback);
 }
 
 main();
