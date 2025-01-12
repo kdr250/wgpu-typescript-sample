@@ -9,10 +9,10 @@ async function main() {
 
     const quadVertexArray = new Float32Array([
         // float4 position, float4 color
-        -1,  1, 0, 1,   0, 1, 0, 1,
-        -1, -1, 0, 1,   0, 0, 0, 1,
-        1, -1, 0, 1,   1, 0, 0, 1,
-        1,  1, 0, 1,   1, 1, 0, 1,
+        -1, 1, 0, 1, 0, 1, 0, 1,
+        -1, -1, 0, 1, 0, 0, 0, 1,
+        1, -1, 0, 1, 1, 0, 0, 1,
+        1, 1, 0, 1, 1, 1, 0, 1,
     ]);
 
     const quadIndexArray = new Uint16Array([0, 1, 2, 0, 2, 3]);
@@ -41,7 +41,7 @@ async function main() {
 
     const { context, pipeline, verticesBuffer, indicesBuffer } = initResult;
 
-    const drawInput = {device, context, pipeline, verticesBuffer, indicesBuffer, quadIndexArray};
+    const drawInput = { device, context, pipeline, verticesBuffer, indicesBuffer, quadIndexArray };
     const callback = drawCallback(drawInput);
 
     requestAnimationFrame(callback);

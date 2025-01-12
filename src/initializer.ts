@@ -15,7 +15,7 @@ type InitializationOutput = {
     context: GPUCanvasContext,
     pipeline: GPURenderPipeline,
     verticesBuffer: GPUBuffer,
-    indicesBuffer: GPUBuffer
+    indicesBuffer: GPUBuffer,
 };
 
 async function initialize(input: InitializationInput): Promise<InitializationOutput> {

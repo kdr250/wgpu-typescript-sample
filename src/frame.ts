@@ -5,11 +5,11 @@ type DrawInput = {
     pipeline: GPURenderPipeline,
     verticesBuffer: GPUBuffer,
     indicesBuffer: GPUBuffer,
-    quadIndexArray: Uint16Array<ArrayBuffer>
+    quadIndexArray: Uint16Array<ArrayBuffer>,
 };
 
 function drawFrame(input: DrawInput) {
-    const { device, context, pipeline, verticesBuffer, indicesBuffer, quadIndexArray} = input;
+    const { device, context, pipeline, verticesBuffer, indicesBuffer, quadIndexArray } = input;
 
     const commandEncoder = device.createCommandEncoder();
     const textureView = context.getCurrentTexture().createView();
