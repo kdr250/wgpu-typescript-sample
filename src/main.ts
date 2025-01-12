@@ -86,6 +86,9 @@ async function main() {
         mappedAtCreation: true,
     });
 
+    new Uint16Array(indicesBuffer.getMappedRange()).set(quadIndexAray);
+    indicesBuffer.unmap();
+
     // create a render pipeline
     const pipeline = device.createRenderPipeline({
         layout: 'auto',
