@@ -131,6 +131,15 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
         usage: GPUTextureUsage.RENDER_ATTACHMENT,
     });
 
+    // Create instance buffer
+    const instanceBuffer = device.createBuffer({
+        size: instancePositions.byteLength,
+        usage: GPUBufferUsage.VERTEX,
+        mappedAtCreation: true,
+    });
+    new Float32Array(instanceBuffer.getMappedRange()).set(instancePositions);
+    instanceBuffer.unmap();
+
     return { context, pipeline, verticesBuffer, uniformBindGroup, uniformBuffer, depthTexture };
 }
 
