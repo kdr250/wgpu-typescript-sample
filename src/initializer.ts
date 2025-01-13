@@ -1,5 +1,6 @@
 import vertexShader from './shader/vertex.wgsl?raw';
 import fragmentShader from './shader/fragment.wgsl?raw';
+import imageData from './texture/wall.png';
 
 type InitializationInput = {
     canvas: HTMLCanvasElement,
@@ -117,6 +118,24 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
         format: 'depth24plus',
         usage: GPUTextureUsage.RENDER_ATTACHMENT,
     });
+
+    // Create texture
+    const image = document.createElement('img');
+    image.src = imageData;
+    await image.decode();
+    const imageBitmap = await createImageBitmap(image);
+
+    const texture = device.createTexture({
+        size: [imageBitmap.width, imageBitmap.height, 1],
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+
+    device.queue.copyExternalImageToTexture(
+        { source: imageBitmap },
+        { texture: texture },
+        [imageBitmap.width, imageBitmap.height]
+    );
 
     return { context, pipeline, verticesBuffer, uniformBindGroup, uniformBuffer, depthTexture };
 }
