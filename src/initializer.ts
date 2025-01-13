@@ -137,6 +137,12 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
         [imageBitmap.width, imageBitmap.height]
     );
 
+    // Create sampler
+    const sampler = device.createSampler({
+        magFilter: 'linear',
+        minFilter: 'linear',
+    });
+
     return { context, pipeline, verticesBuffer, uniformBindGroup, uniformBuffer, depthTexture };
 }
 
