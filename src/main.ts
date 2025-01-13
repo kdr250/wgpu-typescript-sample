@@ -75,6 +75,20 @@ async function main() {
         },
     });
 
+    // Create render texture
+    const renderTargetTexture = device.createTexture({
+        size: [512, 512, 1],
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+        format: 'rgba8unorm',
+    });
+    const renderTargetTextureView = renderTargetTexture.createView();
+
+    // Create sampler
+    const sampler = device.createSampler({
+        magFilter: 'linear',
+        minFilter: 'linear',
+    });
+
     frame(device, context, pipeline);
 }
 
