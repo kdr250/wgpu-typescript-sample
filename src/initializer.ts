@@ -110,6 +110,13 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
         ],
     });
 
+    // Create depth texture
+    const depthTexture = device.createTexture({
+        size: [canvas.width, canvas.height],
+        format: 'depth24plus',
+        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+
     return { context, pipeline, verticesBuffer, uniformBindGroup, uniformBuffer };
 }
 
