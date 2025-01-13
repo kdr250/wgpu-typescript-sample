@@ -1,7 +1,20 @@
 import vertexShader from './shader/vertex.wgsl?raw'
 import fragmentShader from './shader/fragment.wgsl?raw'
 
-function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURenderPipeline) {
+function buildRenderBundle(device: GPUDevice, pipeline: GPURenderPipeline): GPURenderBundle {
+    const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+    const renderBundleDescriptor: GPURenderBundleEncoderDescriptor = {
+        colorFormats: [presentationFormat],
+    };
+
+    const encoder = device.createRenderBundleEncoder(renderBundleDescriptor);
+    encoder.setPipeline(pipeline);
+    encoder.draw(3, 1, 0, 0);
+    const renderBundle = encoder.finish();
+    return renderBundle;
+}
+
+function frame(device: GPUDevice, context: GPUCanvasContext, renderBundle: GPURenderBundle) {
     const commandEncoder = device.createCommandEncoder();
     const textureView = context.getCurrentTexture().createView();
     const renderPassDescriptor: GPURenderPassDescriptor = {
@@ -15,8 +28,7 @@ function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURender
         ],
     };
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-    passEncoder.setPipeline(pipeline);
-    passEncoder.draw(3, 1, 0, 0);
+    passEncoder.executeBundles([renderBundle]);
     passEncoder.end();
 
     device.queue.submit([commandEncoder.finish()]);
@@ -75,7 +87,9 @@ async function main() {
         },
     });
 
-    frame(device, context, pipeline);
+    const renderBundle = buildRenderBundle(device, pipeline);
+
+    frame(device, context, renderBundle);
 }
 
 main();
