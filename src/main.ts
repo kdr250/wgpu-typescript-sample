@@ -112,6 +112,21 @@ async function main() {
         minFilter: 'linear',
     });
 
+    // Ccreate bind group
+    const bindGroup = device.createBindGroup({
+        layout: pipeline2.getBindGroupLayout(0),
+        entries: [
+            {
+                binding: 0,
+                resource: renderTargetTextureView,
+            },
+            {
+                binding: 1,
+                resource: sampler,
+            },
+        ],
+    });
+
     frame(device, context, pipeline);
 }
 
