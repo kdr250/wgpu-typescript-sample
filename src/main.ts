@@ -27,6 +27,14 @@ async function main() {
     });
 
     const computeShaderModule = device.createShaderModule({ code: computeShader });
+
+    const computePipeline = device.createComputePipeline({
+        layout: 'auto',
+        compute: {
+            module: computeShaderModule,
+            entryPoint: 'main',
+        },
+    });
 }
 
 main();
