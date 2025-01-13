@@ -3,13 +3,13 @@ import fragmentShader from './shader/fragment.wgsl?raw'
 import vertexShader2 from './shader/vertex2.wgsl?raw'
 import fragmentShader2 from './shader/fragment2.wgsl?raw'
 
-function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURenderPipeline) {
+function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURenderPipeline, pipeline2: GPURenderPipeline, bindGroup: GPUBindGroup, renderTargetTextureView: GPUTextureView) {
+    // First pass
     const commandEncoder = device.createCommandEncoder();
-    const textureView = context.getCurrentTexture().createView();
     const renderPassDescriptor: GPURenderPassDescriptor = {
         colorAttachments: [
             {
-                view: textureView,
+                view: renderTargetTextureView,
                 clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
                 loadOp: 'clear',
                 storeOp: 'store',
@@ -20,6 +20,23 @@ function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURender
     passEncoder.setPipeline(pipeline);
     passEncoder.draw(3, 1, 0, 0);
     passEncoder.end();
+
+    // Second pass
+    const renderPassDescriptor2: GPURenderPassDescriptor = {
+        colorAttachments: [
+            {
+                view: context.getCurrentTexture().createView(),
+                clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                loadOp: 'clear',
+                storeOp: 'store',
+            },
+        ],
+    };
+    const passEncoder2 = commandEncoder.beginRenderPass(renderPassDescriptor2);
+    passEncoder2.setPipeline(pipeline2);
+    passEncoder2.setBindGroup(0, bindGroup);
+    passEncoder2.draw(3, 1, 0, 0);
+    passEncoder2.end();
 
     device.queue.submit([commandEncoder.finish()]);
 }
@@ -127,7 +144,7 @@ async function main() {
         ],
     });
 
-    frame(device, context, pipeline);
+    frame(device, context, pipeline, pipeline2, bindGroup, renderTargetTextureView);
 }
 
 main();
