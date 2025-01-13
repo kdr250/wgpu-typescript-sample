@@ -84,7 +84,8 @@ async function main() {
         vertexSize,
         positionOffset,
         colorOffset,
-        vertexArray
+        vertexArray,
+        instancePositions
     });
 
     const drawInput = { device, vertexCount, ...initResult };

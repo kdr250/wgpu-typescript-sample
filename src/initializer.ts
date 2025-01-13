@@ -8,6 +8,7 @@ type InitializationInput = {
     positionOffset: number,
     colorOffset: number,
     vertexArray: Float32Array<ArrayBuffer>,
+    instancePositions: Float32Array<ArrayBuffer>,
 }
 
 type InitializationOutput = {
@@ -21,7 +22,7 @@ type InitializationOutput = {
 
 async function initialize(input: InitializationInput): Promise<InitializationOutput> {
 
-    const { canvas, device, vertexSize, positionOffset, colorOffset, vertexArray } = input;
+    const { canvas, device, vertexSize, positionOffset, colorOffset, vertexArray, instancePositions } = input;
 
     const context = canvas.getContext('webgpu') as GPUCanvasContext;
 
@@ -44,6 +45,7 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
                     arrayStride: vertexSize,
 
                     // 頂点バッファの属性を指定します。
+                    stepMode: 'vertex',
                     attributes: [
                         {
                             // position
@@ -59,6 +61,17 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
                         },
                     ],
                 },
+                {
+                    arrayStride: 4 * 2,
+                    stepMode: 'instance',
+                    attributes: [
+                        {
+                            shaderLocation: 2,
+                            offset: 0,
+                            format: 'float32x2',
+                        }
+                    ]
+                }
             ],
         },
         fragment: {
