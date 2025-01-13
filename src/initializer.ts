@@ -84,6 +84,18 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
                 // 0
                 { // @location(0) in fragment shader
                     format: presentationFormat,
+                    blend: {
+                        color: {
+                            srcFactor: 'src-alpha',
+                            dstFactor: 'one',
+                            operation: 'add',
+                        },
+                        alpha: {
+                            srcFactor: 'zero',
+                            dstFactor: 'one',
+                            operation: 'add',
+                        },
+                    },
                 },
             ],
         },
