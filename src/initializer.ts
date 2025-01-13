@@ -1,6 +1,5 @@
 import vertexShader from './shader/vertex.wgsl?raw';
 import fragmentShader from './shader/fragment.wgsl?raw';
-import imageData from './texture/wall.png';
 
 type InitializationInput = {
     canvas: HTMLCanvasElement,
@@ -8,8 +7,8 @@ type InitializationInput = {
     vertexSize: number,
     positionOffset: number,
     colorOffset: number,
-    uvOffset: number,
     vertexArray: Float32Array<ArrayBuffer>,
+    instancePositions: Float32Array<ArrayBuffer>,
 }
 
 type InitializationOutput = {
@@ -19,23 +18,16 @@ type InitializationOutput = {
     uniformBindGroup: GPUBindGroup,
     uniformBuffer: GPUBuffer,
     depthTexture: GPUTexture,
+    instanceBuffer: GPUBuffer,
 };
 
 async function initialize(input: InitializationInput): Promise<InitializationOutput> {
 
-    const { canvas, device, vertexSize, positionOffset, colorOffset, uvOffset, vertexArray } = input;
+    const { canvas, device, vertexSize, positionOffset, colorOffset, vertexArray, instancePositions } = input;
 
     const context = canvas.getContext('webgpu') as GPUCanvasContext;
 
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-    const devicePixelRatio = window.devicePixelRatio || 1;
-    const presentationSize = [
-        canvas.clientWidth * devicePixelRatio,
-        canvas.clientHeight * devicePixelRatio,
-    ];
-    canvas.width = presentationSize[0];
-    canvas.height = presentationSize[1];
-
     context.configure({
         device: device,
         format: presentationFormat,
@@ -54,6 +46,7 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
                     arrayStride: vertexSize,
 
                     // 頂点バッファの属性を指定します。
+                    stepMode: 'vertex',
                     attributes: [
                         {
                             // position
@@ -67,14 +60,19 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
                             offset: colorOffset,
                             format: 'float32x4',
                         },
-                        {
-                            // uv
-                            shaderLocation: 2,
-                            offset: uvOffset,
-                            format: 'float32x2',
-                        },
                     ],
                 },
+                {
+                    arrayStride: 4 * 2,
+                    stepMode: 'instance',
+                    attributes: [
+                        {
+                            shaderLocation: 2,
+                            offset: 0,
+                            format: 'float32x2',
+                        }
+                    ]
+                }
             ],
         },
         fragment: {
@@ -84,18 +82,6 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
                 // 0
                 { // @location(0) in fragment shader
                     format: presentationFormat,
-                    blend: {
-                        color: {
-                            srcFactor: 'src-alpha',
-                            dstFactor: 'one',
-                            operation: 'add',
-                        },
-                        alpha: {
-                            srcFactor: 'zero',
-                            dstFactor: 'one',
-                            operation: 'add',
-                        },
-                    },
                 },
             ],
         },
@@ -126,37 +112,6 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
-    // Create depth texture
-    const depthTexture = device.createTexture({
-        size: [canvas.width, canvas.height],
-        format: 'depth24plus',
-        usage: GPUTextureUsage.RENDER_ATTACHMENT,
-    });
-
-    // Create texture
-    const image = document.createElement('img');
-    image.src = imageData;
-    await image.decode();
-    const imageBitmap = await createImageBitmap(image);
-
-    const texture = device.createTexture({
-        size: [imageBitmap.width, imageBitmap.height, 1],
-        format: 'rgba8unorm',
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
-    });
-
-    device.queue.copyExternalImageToTexture(
-        { source: imageBitmap },
-        { texture: texture },
-        [imageBitmap.width, imageBitmap.height]
-    );
-
-    // Create sampler
-    const sampler = device.createSampler({
-        magFilter: 'linear',
-        minFilter: 'linear',
-    });
-
     // Create bind group
     const uniformBindGroup = device.createBindGroup({
         layout: pipeline.getBindGroupLayout(0),
@@ -167,18 +122,26 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
                     buffer: uniformBuffer
                 },
             },
-            {
-                binding: 1,
-                resource: texture.createView(),
-            },
-            {
-                binding: 2,
-                resource: sampler,
-            },
         ],
     });
 
-    return { context, pipeline, verticesBuffer, uniformBindGroup, uniformBuffer, depthTexture };
+    // Create depth texture
+    const depthTexture = device.createTexture({
+        size: [canvas.width, canvas.height],
+        format: 'depth24plus',
+        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+
+    // Create instance buffer
+    const instanceBuffer = device.createBuffer({
+        size: instancePositions.byteLength,
+        usage: GPUBufferUsage.VERTEX,
+        mappedAtCreation: true,
+    });
+    new Float32Array(instanceBuffer.getMappedRange()).set(instancePositions);
+    instanceBuffer.unmap();
+
+    return { context, pipeline, verticesBuffer, uniformBindGroup, uniformBuffer, depthTexture, instanceBuffer };
 }
 
 export { initialize };
