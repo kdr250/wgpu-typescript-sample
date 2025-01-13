@@ -73,6 +73,11 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
         primitive: {
             topology: 'triangle-list',
         },
+        depthStencil: {
+            depthWriteEnabled: true,
+            depthCompare: 'less',
+            format: 'depth24plus',
+        },
     });
 
     // Create a vertex buffer from the  data.
