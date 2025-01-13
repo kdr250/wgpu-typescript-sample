@@ -53,6 +53,19 @@ async function main() {
         -1, 1, -1, 1, 0, 1, 0, 1,
     ]);
 
+    const instancePositions = new Float32Array([
+        // x, y
+        -5, -5,
+        -5, 0,
+        -5, 5,
+        0, -5,
+        0, 0,
+        0, 5,
+        5, -5,
+        5, 0,
+        5, 5
+    ]);
+
     const canvas = document.querySelector('canvas');
     if (!canvas) {
         throw new Error();
