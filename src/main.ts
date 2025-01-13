@@ -43,6 +43,18 @@ async function main() {
             { binding: 1, resource: { buffer: outputBuffer } },
         ],
     });
+
+    const commandEncoder = device.createCommandEncoder();
+    const passEncoder = commandEncoder.beginComputePass();
+    passEncoder.setPipeline(computePipeline);
+    passEncoder.setBindGroup(0, bindGroup);
+
+    const workGroupSize = 4;
+
+    passEncoder.dispatchWorkgroups(inputArray.length / workGroupSize);
+    passEncoder.end();
+
+    device.queue.submit([commandEncoder.finish()]);
 }
 
 main();
