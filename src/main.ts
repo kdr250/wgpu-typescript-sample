@@ -35,6 +35,14 @@ async function main() {
             entryPoint: 'main',
         },
     });
+
+    const bindGroup = device.createBindGroup({
+        layout: computePipeline.getBindGroupLayout(0),
+        entries: [
+            { binding: 0, resource: { buffer: inputBuffer } },
+            { binding: 1, resource: { buffer: outputBuffer } },
+        ],
+    });
 }
 
 main();
