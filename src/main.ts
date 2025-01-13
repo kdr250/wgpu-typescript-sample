@@ -1,16 +1,16 @@
 import vertexShader from './shader/vertex.wgsl?raw'
 import fragmentShader from './shader/fragment.wgsl?raw'
 
-function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURenderPipeline) {
+function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURenderPipeline, msaaTexture: GPUTexture) {
     const commandEncoder = device.createCommandEncoder();
-    const textureView = context.getCurrentTexture().createView();
     const renderPassDescriptor: GPURenderPassDescriptor = {
         colorAttachments: [
             {
-                view: textureView,
+                view: msaaTexture.createView(),
+                resolveTarget: context.getCurrentTexture().createView(),
                 clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
                 loadOp: 'clear',
-                storeOp: 'store',
+                storeOp: 'discard',
             },
         ],
     };
@@ -88,7 +88,7 @@ async function main() {
         usage: GPUTextureUsage.RENDER_ATTACHMENT,
     });
 
-    frame(device, context, pipeline);
+    frame(device, context, pipeline, msaaTexture);
 }
 
 main();
