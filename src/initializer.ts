@@ -99,19 +99,6 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
-    // Create bind group
-    const uniformBindGroup = device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(0),
-        entries: [
-            {
-                binding: 0, // @binding(0) in shader
-                resource: {
-                    buffer: uniformBuffer
-                },
-            },
-        ],
-    });
-
     // Create depth texture
     const depthTexture = device.createTexture({
         size: [canvas.width, canvas.height],
@@ -141,6 +128,27 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
     const sampler = device.createSampler({
         magFilter: 'linear',
         minFilter: 'linear',
+    });
+
+    // Create bind group
+    const uniformBindGroup = device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [
+            {
+                binding: 0, // @binding(0) in shader
+                resource: {
+                    buffer: uniformBuffer
+                },
+            },
+            {
+                binding: 1,
+                resource: texture.createView(),
+            },
+            {
+                binding: 2,
+                resource: sampler,
+            },
+        ],
     });
 
     return { context, pipeline, verticesBuffer, uniformBindGroup, uniformBuffer, depthTexture };
