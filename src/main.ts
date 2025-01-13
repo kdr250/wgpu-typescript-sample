@@ -1,5 +1,4 @@
-import vertexShader from './shader/vertex.wgsl?raw'
-import fragmentShader from './shader/fragment.wgsl?raw'
+import computeShader from './shader/compute.wgsl?raw';
 
 async function main() {
     // deviceの取得
@@ -26,6 +25,8 @@ async function main() {
         size: inputArray.byteLength,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     });
+
+    const computeShaderModule = device.createShaderModule({ code: computeShader });
 }
 
 main();
