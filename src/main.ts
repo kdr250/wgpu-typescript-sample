@@ -1,5 +1,7 @@
 import vertexShader from './shader/vertex.wgsl?raw'
 import fragmentShader from './shader/fragment.wgsl?raw'
+import vertexShader2 from './shader/vertex2.wgsl?raw'
+import fragmentShader2 from './shader/fragment2.wgsl?raw'
 
 function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURenderPipeline) {
     const commandEncoder = device.createCommandEncoder();
@@ -50,7 +52,7 @@ async function main() {
         alphaMode: 'opaque',
     });
 
-    // create a render pipeline
+    // 三角形を描画するときのRenderPipeline
     const pipeline = device.createRenderPipeline({
         layout: 'auto',
         vertex: {
@@ -66,12 +68,33 @@ async function main() {
             entryPoint: 'main',
             targets: [
                 {
-                    format: presentationFormat, // @location(0) in fragment shader
+                    format: 'rgba8unorm',
                 }
             ]
         },
         primitive: {
             topology: 'triangle-list'
+        },
+    });
+
+    // テクスチャを描画するときのRenderPipeline
+    const pipeline2 = device.createRenderPipeline({
+        layout: 'auto',
+        vertex: {
+            module: device.createShaderModule({ code: vertexShader2 }),
+            entryPoint: 'main',
+        },
+        fragment: {
+            module: device.createShaderModule({ code: fragmentShader2 }),
+            entryPoint: 'main',
+            targets: [
+                {
+                    format: presentationFormat,
+                }
+            ]
+        },
+        primitive: {
+            topology: 'triangle-list',
         },
     });
 
