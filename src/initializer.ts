@@ -16,6 +16,7 @@ type InitializationOutput = {
     verticesBuffer: GPUBuffer,
     uniformBindGroup: GPUBindGroup,
     uniformBuffer: GPUBuffer,
+    depthTexture: GPUTexture,
 };
 
 async function initialize(input: InitializationInput): Promise<InitializationOutput> {
@@ -73,6 +74,11 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
         primitive: {
             topology: 'triangle-list',
         },
+        depthStencil: {
+            depthWriteEnabled: true,
+            depthCompare: 'less',
+            format: 'depth24plus',
+        },
     });
 
     // Create a vertex buffer from the  data.
@@ -105,7 +111,14 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
         ],
     });
 
-    return { context, pipeline, verticesBuffer, uniformBindGroup, uniformBuffer };
+    // Create depth texture
+    const depthTexture = device.createTexture({
+        size: [canvas.width, canvas.height],
+        format: 'depth24plus',
+        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+
+    return { context, pipeline, verticesBuffer, uniformBindGroup, uniformBuffer, depthTexture };
 }
 
 export { initialize };

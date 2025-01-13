@@ -8,10 +8,11 @@ type DrawInput = {
     vertexCount: number,
     uniformBindGroup: GPUBindGroup,
     uniformBuffer: GPUBuffer,
+    depthTexture: GPUTexture,
 };
 
 function drawFrame(input: DrawInput) {
-    const { device, context, pipeline, verticesBuffer, vertexCount, uniformBindGroup, uniformBuffer } = input;
+    const { device, context, pipeline, verticesBuffer, vertexCount, uniformBindGroup, uniformBuffer, depthTexture } = input;
 
     const commandEncoder = device.createCommandEncoder();
     const textureView = context.getCurrentTexture().createView();
@@ -24,6 +25,12 @@ function drawFrame(input: DrawInput) {
                 storeOp: 'store',
             },
         ],
+        depthStencilAttachment: {
+            view: depthTexture.createView(),
+            depthClearValue: 1.0,
+            depthLoadOp: 'clear',
+            depthStoreOp: 'store',
+        },
     };
 
     getTransformationMatrix(device, uniformBuffer);
