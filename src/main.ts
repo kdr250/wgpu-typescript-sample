@@ -1,15 +1,13 @@
 import vertexShader from './shader/vertex.wgsl?raw'
 import fragmentShader from './shader/fragment.wgsl?raw'
-import vertexShader2 from './shader/vertex2.wgsl?raw'
-import fragmentShader2 from './shader/fragment2.wgsl?raw'
 
-function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURenderPipeline, pipeline2: GPURenderPipeline, bindGroup: GPUBindGroup, renderTargetTextureView: GPUTextureView) {
-    // First pass
+function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURenderPipeline) {
     const commandEncoder = device.createCommandEncoder();
+    const textureView = context.getCurrentTexture().createView();
     const renderPassDescriptor: GPURenderPassDescriptor = {
         colorAttachments: [
             {
-                view: renderTargetTextureView,
+                view: textureView,
                 clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
                 loadOp: 'clear',
                 storeOp: 'store',
@@ -20,23 +18,6 @@ function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURender
     passEncoder.setPipeline(pipeline);
     passEncoder.draw(3, 1, 0, 0);
     passEncoder.end();
-
-    // Second pass
-    const renderPassDescriptor2: GPURenderPassDescriptor = {
-        colorAttachments: [
-            {
-                view: context.getCurrentTexture().createView(),
-                clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-                loadOp: 'clear',
-                storeOp: 'store',
-            },
-        ],
-    };
-    const passEncoder2 = commandEncoder.beginRenderPass(renderPassDescriptor2);
-    passEncoder2.setPipeline(pipeline2);
-    passEncoder2.setBindGroup(0, bindGroup);
-    passEncoder2.draw(3, 1, 0, 0);
-    passEncoder2.end();
 
     device.queue.submit([commandEncoder.finish()]);
 }
@@ -69,7 +50,7 @@ async function main() {
         alphaMode: 'opaque',
     });
 
-    // 三角形を描画するときのRenderPipeline
+    // create a render pipeline
     const pipeline = device.createRenderPipeline({
         layout: 'auto',
         vertex: {
@@ -85,7 +66,7 @@ async function main() {
             entryPoint: 'main',
             targets: [
                 {
-                    format: 'rgba8unorm',
+                    format: presentationFormat, // @location(0) in fragment shader
                 }
             ]
         },
@@ -94,57 +75,7 @@ async function main() {
         },
     });
 
-    // テクスチャを描画するときのRenderPipeline
-    const pipeline2 = device.createRenderPipeline({
-        layout: 'auto',
-        vertex: {
-            module: device.createShaderModule({ code: vertexShader2 }),
-            entryPoint: 'main',
-        },
-        fragment: {
-            module: device.createShaderModule({ code: fragmentShader2 }),
-            entryPoint: 'main',
-            targets: [
-                {
-                    format: presentationFormat,
-                }
-            ]
-        },
-        primitive: {
-            topology: 'triangle-list',
-        },
-    });
-
-    // Create render texture
-    const renderTargetTexture = device.createTexture({
-        size: [512, 512, 1],
-        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
-        format: 'rgba8unorm',
-    });
-    const renderTargetTextureView = renderTargetTexture.createView();
-
-    // Create sampler
-    const sampler = device.createSampler({
-        magFilter: 'linear',
-        minFilter: 'linear',
-    });
-
-    // Ccreate bind group
-    const bindGroup = device.createBindGroup({
-        layout: pipeline2.getBindGroupLayout(0),
-        entries: [
-            {
-                binding: 0,
-                resource: renderTargetTextureView,
-            },
-            {
-                binding: 1,
-                resource: sampler,
-            },
-        ],
-    });
-
-    frame(device, context, pipeline, pipeline2, bindGroup, renderTargetTextureView);
+    frame(device, context, pipeline);
 }
 
 main();
