@@ -8,6 +8,7 @@ type InitializationInput = {
     vertexSize: number,
     positionOffset: number,
     colorOffset: number,
+    uvOffset: number,
     vertexArray: Float32Array<ArrayBuffer>,
 }
 
@@ -22,11 +23,19 @@ type InitializationOutput = {
 
 async function initialize(input: InitializationInput): Promise<InitializationOutput> {
 
-    const { canvas, device, vertexSize, positionOffset, colorOffset, vertexArray } = input;
+    const { canvas, device, vertexSize, positionOffset, colorOffset, uvOffset, vertexArray } = input;
 
     const context = canvas.getContext('webgpu') as GPUCanvasContext;
 
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const presentationSize = [
+        canvas.clientWidth * devicePixelRatio,
+        canvas.clientHeight * devicePixelRatio,
+    ];
+    canvas.width = presentationSize[0];
+    canvas.height = presentationSize[1];
+
     context.configure({
         device: device,
         format: presentationFormat,
@@ -57,6 +66,12 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
                             shaderLocation: 1, // @location(1) in vertex shader
                             offset: colorOffset,
                             format: 'float32x4',
+                        },
+                        {
+                            // uv
+                            shaderLocation: 2,
+                            offset: uvOffset,
+                            format: 'float32x2',
                         },
                     ],
                 },
