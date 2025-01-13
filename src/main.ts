@@ -80,6 +80,14 @@ async function main() {
         }
     });
 
+    // Create MSAA texture
+    const msaaTexture = device.createTexture({
+        size: [canvas.width, canvas.height],
+        sampleCount,
+        format: presentationFormat,
+        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+
     frame(device, context, pipeline);
 }
 
