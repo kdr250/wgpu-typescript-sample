@@ -1,85 +1,81 @@
-import computeShader from './shader/compute.wgsl?raw';
+import vertexShader from './shader/vertex.wgsl?raw'
+import fragmentShader from './shader/fragment.wgsl?raw'
+
+function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURenderPipeline) {
+    const commandEncoder = device.createCommandEncoder();
+    const textureView = context.getCurrentTexture().createView();
+    const renderPassDescriptor: GPURenderPassDescriptor = {
+        colorAttachments: [
+            {
+                view: textureView,
+                clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                loadOp: 'clear',
+                storeOp: 'store',
+            },
+        ],
+    };
+    const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+    passEncoder.setPipeline(pipeline);
+    passEncoder.draw(3, 1, 0, 0);
+    passEncoder.end();
+
+    device.queue.submit([commandEncoder.finish()]);
+}
 
 async function main() {
+    const canvas = document.querySelector('canvas');
+    if (!canvas) {
+        throw new Error();
+    }
+
+    // WebGPUコンテキストの取得
+    const context = canvas.getContext('webgpu') as GPUCanvasContext | null;
+    if (!context) {
+        throw new Error();
+    }
+
     // deviceの取得
     const g_adapter = await navigator.gpu.requestAdapter();
     if (!g_adapter) {
         throw new Error();
     }
+
     const device = await g_adapter.requestDevice();
 
-    // 入力配列を作成
-    const inputArray = new Float32Array([1, 2, 3, 4]);
+    const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 
-    // 入力用のバッファーを作成
-    const inputBuffer = device.createBuffer({
-        size: inputArray.byteLength,
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    context.configure({
+        device: device,
+        format: presentationFormat,
+        alphaMode: 'opaque',
     });
 
-    // inputBufferにデータを書き込む
-    device.queue.writeBuffer(inputBuffer, 0, inputArray);
-
-    // 出力用のバッファーを作成
-    const outputBuffer = device.createBuffer({
-        size: inputArray.byteLength,
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-    });
-
-    const computeShaderModule = device.createShaderModule({ code: computeShader });
-
-    const computePipeline = device.createComputePipeline({
+    // create a render pipeline
+    const pipeline = device.createRenderPipeline({
         layout: 'auto',
-        compute: {
-            module: computeShaderModule,
+        vertex: {
+            module: device.createShaderModule({
+                code: vertexShader,
+            }),
             entryPoint: 'main',
+        },
+        fragment: {
+            module: device.createShaderModule({
+                code: fragmentShader,
+            }),
+            entryPoint: 'main',
+            targets: [
+                {
+                    format: presentationFormat, // @location(0) in fragment shader
+                }
+            ]
+        },
+        primitive: {
+            topology: 'triangle-list'
         },
     });
 
-    const bindGroup = device.createBindGroup({
-        layout: computePipeline.getBindGroupLayout(0),
-        entries: [
-            { binding: 0, resource: { buffer: inputBuffer } },
-            { binding: 1, resource: { buffer: outputBuffer } },
-        ],
-    });
-
-    const commandEncoder = device.createCommandEncoder();
-    const passEncoder = commandEncoder.beginComputePass();
-    passEncoder.setPipeline(computePipeline);
-    passEncoder.setBindGroup(0, bindGroup);
-
-    const workGroupSize = 4;
-
-    passEncoder.dispatchWorkgroups(inputArray.length / workGroupSize);
-    passEncoder.end();
-
-    device.queue.submit([commandEncoder.finish()]);
-
-    // Get a GPU buffer for reading
-    const stagingBuffer = device.createBuffer({
-        mappedAtCreation: false,
-        size: 16,
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-    });
-
-    // Encode commands for copying buffer to buffer.
-    const copyEncoder = device.createCommandEncoder();
-    copyEncoder.copyBufferToBuffer(
-        outputBuffer,  // source buffer
-        0,             // source offset
-        stagingBuffer, // destination buffer
-        0,             // destination offset
-        16             // size
-    );
-    const copyCommand = copyEncoder.finish();
-    device.queue.submit([copyCommand]);
-
-    // 結果を取得
-    await stagingBuffer.mapAsync(GPUMapMode.READ);
-    const copyArrayBuffer = stagingBuffer.getMappedRange();
-    console.log(new Float32Array(copyArrayBuffer)); // [2, 4, 6, 8]
-    stagingBuffer.unmap();
+    frame(device, context, pipeline);
 }
 
 main();
