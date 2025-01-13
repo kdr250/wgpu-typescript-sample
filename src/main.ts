@@ -50,6 +50,8 @@ async function main() {
         alphaMode: 'opaque',
     });
 
+    const sampleCount = 4;
+
     // create a render pipeline
     const pipeline = device.createRenderPipeline({
         layout: 'auto',
@@ -73,6 +75,9 @@ async function main() {
         primitive: {
             topology: 'triangle-list'
         },
+        multisample: {
+            count: sampleCount,
+        }
     });
 
     frame(device, context, pipeline);
