@@ -16,6 +16,7 @@ type InitializationOutput = {
     verticesBuffer: GPUBuffer,
     uniformBindGroup: GPUBindGroup,
     uniformBuffer: GPUBuffer,
+    depthTexture: GPUTexture,
 };
 
 async function initialize(input: InitializationInput): Promise<InitializationOutput> {
@@ -117,7 +118,7 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
         usage: GPUTextureUsage.RENDER_ATTACHMENT,
     });
 
-    return { context, pipeline, verticesBuffer, uniformBindGroup, uniformBuffer };
+    return { context, pipeline, verticesBuffer, uniformBindGroup, uniformBuffer, depthTexture };
 }
 
 export { initialize };

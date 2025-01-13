@@ -74,9 +74,7 @@ async function main() {
         vertexArray
     });
 
-    const { context, pipeline, verticesBuffer, uniformBindGroup, uniformBuffer } = initResult;
-
-    const drawInput = { device, context, pipeline, verticesBuffer, vertexCount, uniformBindGroup, uniformBuffer };
+    const drawInput = { device, vertexCount, ...initResult };
     const callback = drawCallback(drawInput);
 
     requestAnimationFrame(callback);
