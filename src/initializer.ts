@@ -18,6 +18,7 @@ type InitializationOutput = {
     uniformBindGroup: GPUBindGroup,
     uniformBuffer: GPUBuffer,
     depthTexture: GPUTexture,
+    instanceBuffer: GPUBuffer,
 };
 
 async function initialize(input: InitializationInput): Promise<InitializationOutput> {
@@ -140,7 +141,7 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
     new Float32Array(instanceBuffer.getMappedRange()).set(instancePositions);
     instanceBuffer.unmap();
 
-    return { context, pipeline, verticesBuffer, uniformBindGroup, uniformBuffer, depthTexture };
+    return { context, pipeline, verticesBuffer, uniformBindGroup, uniformBuffer, depthTexture, instanceBuffer };
 }
 
 export { initialize };

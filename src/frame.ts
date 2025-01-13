@@ -9,10 +9,12 @@ type DrawInput = {
     uniformBindGroup: GPUBindGroup,
     uniformBuffer: GPUBuffer,
     depthTexture: GPUTexture,
+    instancePositions: Float32Array<ArrayBuffer>,
+    instanceBuffer: GPUBuffer,
 };
 
 function drawFrame(input: DrawInput) {
-    const { device, context, pipeline, verticesBuffer, vertexCount, uniformBindGroup, uniformBuffer, depthTexture } = input;
+    const { device, context, pipeline, verticesBuffer, vertexCount, uniformBindGroup, uniformBuffer, depthTexture, instancePositions, instanceBuffer } = input;
 
     const commandEncoder = device.createCommandEncoder();
     const textureView = context.getCurrentTexture().createView();
@@ -39,7 +41,8 @@ function drawFrame(input: DrawInput) {
     passEncoder.setPipeline(pipeline);
     passEncoder.setBindGroup(0, uniformBindGroup);
     passEncoder.setVertexBuffer(0, verticesBuffer);
-    passEncoder.draw(vertexCount);
+    passEncoder.setVertexBuffer(1, instanceBuffer);
+    passEncoder.draw(vertexCount, Math.floor(instancePositions.length / 2));
     passEncoder.end();
 
     device.queue.submit([commandEncoder.finish()]);

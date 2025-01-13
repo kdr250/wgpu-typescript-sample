@@ -88,7 +88,7 @@ async function main() {
         instancePositions
     });
 
-    const drawInput = { device, vertexCount, ...initResult };
+    const drawInput = { device, vertexCount, instancePositions, ...initResult };
     const callback = drawCallback(drawInput);
 
     requestAnimationFrame(callback);
