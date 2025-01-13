@@ -55,6 +55,31 @@ async function main() {
     passEncoder.end();
 
     device.queue.submit([commandEncoder.finish()]);
+
+    // Get a GPU buffer for reading
+    const stagingBuffer = device.createBuffer({
+        mappedAtCreation: false,
+        size: 16,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+    });
+
+    // Encode commands for copying buffer to buffer.
+    const copyEncoder = device.createCommandEncoder();
+    copyEncoder.copyBufferToBuffer(
+        outputBuffer,  // source buffer
+        0,             // source offset
+        stagingBuffer, // destination buffer
+        0,             // destination offset
+        16             // size
+    );
+    const copyCommand = copyEncoder.finish();
+    device.queue.submit([copyCommand]);
+
+    // 結果を取得
+    await stagingBuffer.mapAsync(GPUMapMode.READ);
+    const copyArrayBuffer = stagingBuffer.getMappedRange();
+    console.log(new Float32Array(copyArrayBuffer)); // [2, 4, 6, 8]
+    stagingBuffer.unmap();
 }
 
 main();
