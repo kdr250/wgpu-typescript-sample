@@ -1,20 +1,7 @@
 import vertexShader from './shader/vertex.wgsl?raw'
 import fragmentShader from './shader/fragment.wgsl?raw'
 
-function buildRenderBundle(device: GPUDevice, pipeline: GPURenderPipeline): GPURenderBundle {
-    const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-    const renderBundleDescriptor: GPURenderBundleEncoderDescriptor = {
-        colorFormats: [presentationFormat],
-    };
-
-    const encoder = device.createRenderBundleEncoder(renderBundleDescriptor);
-    encoder.setPipeline(pipeline);
-    encoder.draw(3, 1, 0, 0);
-    const renderBundle = encoder.finish();
-    return renderBundle;
-}
-
-function frame(device: GPUDevice, context: GPUCanvasContext, renderBundle: GPURenderBundle) {
+function frame(device: GPUDevice, context: GPUCanvasContext, pipeline: GPURenderPipeline) {
     const commandEncoder = device.createCommandEncoder();
     const textureView = context.getCurrentTexture().createView();
     const renderPassDescriptor: GPURenderPassDescriptor = {
@@ -28,7 +15,8 @@ function frame(device: GPUDevice, context: GPUCanvasContext, renderBundle: GPURe
         ],
     };
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-    passEncoder.executeBundles([renderBundle]);
+    passEncoder.setPipeline(pipeline);
+    passEncoder.draw(3, 1, 0, 0);
     passEncoder.end();
 
     device.queue.submit([commandEncoder.finish()]);
@@ -76,6 +64,12 @@ async function main() {
                 code: fragmentShader,
             }),
             entryPoint: 'main',
+            constants: {
+                is_red: 0,
+                color_r: 0.5,
+                color_g: 0.25,
+                color_b: 1.0,
+            },
             targets: [
                 {
                     format: presentationFormat, // @location(0) in fragment shader
@@ -87,9 +81,7 @@ async function main() {
         },
     });
 
-    const renderBundle = buildRenderBundle(device, pipeline);
-
-    frame(device, context, renderBundle);
+    frame(device, context, pipeline);
 }
 
 main();
