@@ -64,6 +64,12 @@ async function main() {
                 code: fragmentShader,
             }),
             entryPoint: 'main',
+            constants: {
+                is_red: 0,
+                color_r: 0.5,
+                color_g: 0.25,
+                color_b: 1.0,
+            },
             targets: [
                 {
                     format: presentationFormat, // @location(0) in fragment shader
