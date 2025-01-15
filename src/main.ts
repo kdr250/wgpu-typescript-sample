@@ -1,5 +1,4 @@
-import vertexShader from './shader/vertex.wgsl?raw'
-import fragmentShader from './shader/fragment.wgsl?raw'
+import computeShader from './shader/compute.wgsl?raw'
 
 async function main() {
 
@@ -79,7 +78,7 @@ async function main() {
     }
 
     // シェーダーモジュールを作成
-    const module = device.createShaderModule({ code: fragmentShader });
+    const module = device.createShaderModule({ code: computeShader });
 
     // パイプラインを作成
     const pipeline = device.createComputePipeline({
