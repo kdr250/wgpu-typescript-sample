@@ -1,81 +1,4 @@
-import vertexShader from './shader/vertex.wgsl?raw'
-import fragmentShader from './shader/fragment.wgsl?raw'
-
-function frame(device: GPUDevice, pipeline: GPURenderPipeline, texture: GPUTexture) {
-    const commandEncoder = device.createCommandEncoder();
-
-    const renderPassDescriptor: GPURenderPassDescriptor = {
-        colorAttachments: [
-            {
-                view: texture.createView(),
-                clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-                loadOp: 'clear',
-                storeOp: 'store',
-            },
-        ],
-    };
-
-    const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-    passEncoder.setPipeline(pipeline);
-    passEncoder.draw(3, 1, 0, 0);
-    passEncoder.end();
-
-    device.queue.submit([commandEncoder.finish()]);
-}
-
-function drawImageFromBuffer(arrayBuffer: ArrayBuffer, width: number, height: number) {
-    // キャンバスを作成
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext('2d');
-    if (!context) {
-        throw new Error();
-    }
-
-    // ImageDataオブジェクトを作成
-    const imageData = new ImageData(
-        new Uint8ClampedArray(arrayBuffer),
-        width,
-        height,
-    );
-
-    // キャンバスにImageDataを描画
-    context.putImageData(imageData, 0, 0);
-
-    return canvas;
-}
-
-async function getTextureDataAndShowAsCanvas(device: GPUDevice, texture: GPUTexture) {
-    // GPUBufferを作成（テクスチャのデータを読み出すため）
-    const bufferSize = 256 * 256 * 4;
-    const buffer = device.createBuffer({
-        size: bufferSize,
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-    });
-
-    const commandEncoder = device.createCommandEncoder();
-
-    commandEncoder.copyTextureToBuffer(
-        { texture: texture },
-        { buffer: buffer, bytesPerRow: 256 * 4 },
-        { width: 256, height: 256, depthOrArrayLayers: 1 },
-    );
-
-    // コマンドをキューに送信して実行
-    device.queue.submit([commandEncoder.finish()]);
-
-    // データを読み出す
-    await buffer.mapAsync(GPUMapMode.READ);
-    const arrayBuffer = buffer.getMappedRange();
-
-    // 画像を表示
-    const canvas = drawImageFromBuffer(arrayBuffer, 256, 256);
-
-    document.body.appendChild(canvas);
-
-    buffer.unmap();
-}
+import computeShader from './shader/compute.wgsl?raw'
 
 async function main() {
 
@@ -84,44 +7,140 @@ async function main() {
     if (!g_adapter) {
         throw new Error();
     }
-
     const device = await g_adapter.requestDevice();
 
-    // 三角形を描画するときのRenderPipeline
-    const pipeline = device.createRenderPipeline({
-        layout: 'auto',
-        vertex: {
-            module: device.createShaderModule({
-                code: vertexShader,
-            }),
-            entryPoint: 'main',
-        },
-        fragment: {
-            module: device.createShaderModule({
-                code: fragmentShader,
-            }),
-            entryPoint: 'main',
-            targets: [
-                {
-                    format: 'rgba8unorm',
-                }
-            ]
-        },
-        primitive: {
-            topology: 'triangle-list'
-        },
-    });
+    const size = 64;
 
-    // Create texture
-    const texture = device.createTexture({
-        size: [256, 256],
+    // Create input texture for storage
+    const sourceTexture = device.createTexture({
+        size: { width: size, height: size },
         format: 'rgba8unorm',
-        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+        usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING,
     });
 
-    frame(device, pipeline, texture);
+    // Create output texture for storage
+    const destinationTexture = device.createTexture({
+        size: { width: size, height: size },
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.COPY_SRC | GPUTextureUsage.STORAGE_BINDING,
+    });
 
-    await getTextureDataAndShowAsCanvas(device, texture);
+    // テスト用に64x64ピクセルのランダム画像生成
+    const imageCanvas = document.createElement('canvas');
+    imageCanvas.width = size;
+    imageCanvas.height = size;
+
+    const imageContext = imageCanvas.getContext('2d');
+    if (!imageContext) {
+        throw new Error();
+    }
+    for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+            imageContext.fillStyle = `rgb(${(x * 4) % 256}, ${(y * 4) % 256}, ${(x * 2 + y * 2) % 256})`;
+            imageContext.fillRect(x, y, 1, 1);
+        }
+    }
+
+    // inputCanvasに元画像を描画
+    const inputCanvas = document.getElementById('inputCanvas') as HTMLCanvasElement;
+    inputCanvas.width = size;
+    inputCanvas.height = size;
+
+    const inputContext = inputCanvas.getContext('2d');
+    if (!inputContext) {
+        throw new Error();
+    }
+    inputContext.drawImage(imageCanvas, 0, 0);
+
+    // 入力画像データをCanvas2Dのコンテキストから取得
+    const imageData = inputContext.getImageData(0, 0, size, size);
+    const imageBytes = new Uint8Array(imageData.data.buffer);
+
+    // まずは入力画像データ(Uint8Array)をGPUバッファにコピー（Uint8Arrayを直接GPUテクスチャにコピーできないため）
+    const imageBuffer = device.createBuffer({
+        size: imageBytes.byteLength,
+        usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.MAP_WRITE,
+    });
+    await imageBuffer.mapAsync(GPUMapMode.WRITE);
+    new Uint8Array(imageBuffer.getMappedRange()).set(imageBytes);
+    imageBuffer.unmap();
+
+    // GPUバッファからGPUテクスチャに画像データをコピー
+    {
+        const encoder = device.createCommandEncoder();
+        encoder.copyBufferToTexture(
+            { buffer: imageBuffer, bytesPerRow: size * 4 },
+            { texture: sourceTexture },
+            { width: size, height: size },
+        );
+
+        device.queue.submit([encoder.finish()]);
+    }
+
+    // シェーダーモジュールを作成
+    const module = device.createShaderModule({ code: computeShader });
+
+    // パイプラインを作成
+    const pipeline = device.createComputePipeline({
+        layout: 'auto',
+        compute: {
+            module,
+            entryPoint: 'main',
+        },
+    });
+
+    // バインドグループを作成
+    const bindGroup = device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [
+            { binding: 0, resource: sourceTexture.createView() },
+            { binding: 1, resource: destinationTexture.createView() },
+        ],
+    });
+
+    // コンピュートシェーダーを実行
+    {
+        const encoder = device.createCommandEncoder();
+        const computePassEncoder = encoder.beginComputePass();
+        computePassEncoder.setPipeline(pipeline);
+        computePassEncoder.setBindGroup(0, bindGroup);
+        const workgroupX = Math.ceil(size / 8);
+        const workgroupY = Math.ceil(size / 8);
+        computePassEncoder.dispatchWorkgroups(workgroupX, workgroupY);
+        computePassEncoder.end();
+
+        device.queue.submit([encoder.finish()]);
+    }
+
+    // 出力用Canvas
+    const outputCanvas = document.getElementById('outputCanvas') as HTMLCanvasElement;
+    outputCanvas.width = size;
+    outputCanvas.height = size;
+    const outputContext = outputCanvas.getContext('2d') as CanvasRenderingContext2D;
+
+    // 出力バッファを作成
+    const outputBuffer = device.createBuffer({
+        size: imageBytes.byteLength,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+    });
+
+    {
+        // 出力用Textureから出力バッファにコピー
+        const encoder = device.createCommandEncoder();
+        encoder.copyTextureToBuffer(
+            { texture: destinationTexture },
+            { buffer: outputBuffer, bytesPerRow: size * 4 },
+            { width: size, height: size },
+        );
+
+        device.queue.submit([encoder.finish()]);
+    }
+
+    // 出力バッファをマップしてImageDataに変換
+    await outputBuffer.mapAsync(GPUMapMode.READ);
+    const outputArray = new Uint8Array(outputBuffer.getMappedRange());
+    const outImageData = new ImageData(new Uint8ClampedArray(outputArray), size, size);
+    outputContext.putImageData(outImageData, 0, 0);
 }
 
 main();
