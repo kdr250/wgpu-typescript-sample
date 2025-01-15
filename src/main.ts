@@ -8,6 +8,7 @@ async function main() {
     const colorOffset = 4 * 4; // Byte offset of cube vertex color attribute.
     const uvOffset = 4 * 8;
     const vertexCount = 36;
+    const instanceNumber = 30 * 30;
 
     const vertexArray = new Float32Array([
         // float4 position, float4 color float2 uv
@@ -73,10 +74,11 @@ async function main() {
         positionOffset,
         colorOffset,
         uvOffset,
-        vertexArray
+        vertexArray,
+        instanceNumber,
     });
 
-    const drawInput = { device, vertexCount, ...initResult };
+    const drawInput = { device, vertexCount, instanceNumber, ...initResult };
     const callback = drawCallback(drawInput);
 
     requestAnimationFrame(callback);

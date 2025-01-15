@@ -10,6 +10,7 @@ type InitializationInput = {
     colorOffset: number,
     uvOffset: number,
     vertexArray: Float32Array<ArrayBuffer>,
+    instanceNumber: number,
 }
 
 type InitializationOutput = {
@@ -19,11 +20,12 @@ type InitializationOutput = {
     uniformBindGroup: GPUBindGroup,
     uniformBuffer: GPUBuffer,
     depthTexture: GPUTexture,
+    storageBuffer: GPUBuffer,
 };
 
 async function initialize(input: InitializationInput): Promise<InitializationOutput> {
 
-    const { canvas, device, vertexSize, positionOffset, colorOffset, uvOffset, vertexArray } = input;
+    const { canvas, device, vertexSize, positionOffset, colorOffset, uvOffset, vertexArray, instanceNumber } = input;
 
     const context = canvas.getContext('webgpu') as GPUCanvasContext;
 
@@ -114,6 +116,13 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
+    // Create storage buffer
+    const storageBufferSize = 4 * 16 * instanceNumber;
+    const storageBuffer = device.createBuffer({
+        size: storageBufferSize,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    });
+
     // Create depth texture
     const depthTexture = device.createTexture({
         size: [canvas.width, canvas.height],
@@ -163,10 +172,16 @@ async function initialize(input: InitializationInput): Promise<InitializationOut
                 binding: 2,
                 resource: sampler,
             },
+            {
+                binding: 3,
+                resource: {
+                    buffer: storageBuffer,
+                }
+            }
         ],
     });
 
-    return { context, pipeline, verticesBuffer, uniformBindGroup, uniformBuffer, depthTexture };
+    return { context, pipeline, verticesBuffer, uniformBindGroup, uniformBuffer, depthTexture, storageBuffer };
 }
 
 export { initialize };

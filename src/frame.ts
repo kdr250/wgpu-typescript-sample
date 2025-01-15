@@ -9,13 +9,15 @@ type DrawInput = {
     uniformBindGroup: GPUBindGroup,
     uniformBuffer: GPUBuffer,
     depthTexture: GPUTexture,
+    storageBuffer: GPUBuffer,
+    instanceNumber: number,
 };
 
 let commandEncoder: GPUCommandEncoder | undefined;
 let passEncoder: GPURenderPassEncoder | undefined;
 
-function draw(input: DrawInput, index: number) {
-    const { device, context, pipeline, verticesBuffer, vertexCount, uniformBindGroup, uniformBuffer, depthTexture } = input;
+function draw(input: DrawInput) {
+    const { device, context, pipeline, verticesBuffer, vertexCount, uniformBindGroup, uniformBuffer, depthTexture, storageBuffer, instanceNumber } = input;
 
     if (!commandEncoder) {
         commandEncoder = device.createCommandEncoder();
@@ -42,19 +44,18 @@ function draw(input: DrawInput, index: number) {
         passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
     }
 
-    getTransformationMatrix(device, uniformBuffer, index);
+    getTransformationMatrix(device, uniformBuffer, storageBuffer, instanceNumber);
+
     passEncoder.setPipeline(pipeline);
     passEncoder.setBindGroup(0, uniformBindGroup);
     passEncoder.setVertexBuffer(0, verticesBuffer);
-    passEncoder.draw(vertexCount);
+    passEncoder.draw(vertexCount, instanceNumber);
 }
 
 function drawFrame(input: DrawInput) {
     const { device } = input;
 
-    for (let index = 0; index < 30 * 30; index++) {
-        draw(input, index);
-    }
+    draw(input);
 
     if (passEncoder) {
         passEncoder.end();
@@ -73,7 +74,7 @@ function drawCallback(input: DrawInput): () => void {
     return drawFrame.bind(drawFrame, input);
 }
 
-function getTransformationMatrix(device: GPUDevice, uniformBuffer: GPUBuffer, index: number) {
+function getTransformationMatrix(device: GPUDevice, uniformBuffer: GPUBuffer, storegaBuffer: GPUBuffer, instanceNumber: number) {
     const projectionMatrix = mat4.create();
     mat4.perspective(projectionMatrix, (2 * Math.PI) / 5, 1, 1, 1000.0);
     device.queue.writeBuffer(
@@ -94,27 +95,29 @@ function getTransformationMatrix(device: GPUDevice, uniformBuffer: GPUBuffer, in
         viewMatrix.byteLength
     );
 
-    const worldMatrix = mat4.create();
-    const now = Date.now() / 1000;
-    mat4.translate(
-        worldMatrix,
-        worldMatrix,
-        vec3.fromValues((index % 30) * 5 - 100, Math.floor(index / 30) * 5 + -50, 0)
-    );
-    mat4.rotate(
-        worldMatrix,
-        worldMatrix,
-        1,
-        vec3.fromValues(Math.sin(now), Math.cos(now), 0)
-    );
+    for (let index = 0; index < instanceNumber; index++) {
+        const worldMatrix = mat4.create();
+        const now = Date.now() / 1000;
+        mat4.translate(
+            worldMatrix,
+            worldMatrix,
+            vec3.fromValues((index % 30) * 5 - 100, Math.floor(index / 30) * 5 + -50, 0)
+        );
+        mat4.rotate(
+            worldMatrix,
+            worldMatrix,
+            1,
+            vec3.fromValues(Math.sin(now), Math.cos(now), 0)
+        );
 
-    device.queue.writeBuffer(
-        uniformBuffer,
-        4 * 16 * 2,
-        worldMatrix.buffer,
-        worldMatrix.byteOffset,
-        worldMatrix.byteLength
-    );
+        device.queue.writeBuffer(
+            storegaBuffer,
+            4 * 16 * index,
+            worldMatrix.buffer,
+            worldMatrix.byteOffset,
+            worldMatrix.byteLength
+        );
+    }
 }
 
 export { drawCallback };
