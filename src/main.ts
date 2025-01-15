@@ -97,6 +97,20 @@ async function main() {
             { binding: 1, resource: destinationTexture.createView() },
         ],
     });
+
+    // コンピュートシェーダーを実行
+    {
+        const encoder = device.createCommandEncoder();
+        const computePassEncoder = encoder.beginComputePass();
+        computePassEncoder.setPipeline(pipeline);
+        computePassEncoder.setBindGroup(0, bindGroup);
+        const workgroupX = Math.ceil(size / 8);
+        const workgroupY = Math.ceil(size / 8);
+        computePassEncoder.dispatchWorkgroups(workgroupX, workgroupY);
+        computePassEncoder.end();
+
+        device.queue.submit([encoder.finish()]);
+    }
 }
 
 main();
