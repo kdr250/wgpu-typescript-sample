@@ -1,10 +1,26 @@
 import vertexShader from './shader/vertex.wgsl?raw'
 import fragmentShader from './shader/fragment.wgsl?raw'
-import vertexShader2 from './shader/vertex2.wgsl?raw'
-import fragmentShader2 from './shader/fragment2.wgsl?raw'
 
-function frame(device: GPUDevice, pipeline: GPURenderPipeline, renderTargetTextureView: GPUTextureView) {
-    // TODO
+function frame(device: GPUDevice, pipeline: GPURenderPipeline, texture: GPUTexture) {
+    const commandEncoder = device.createCommandEncoder();
+
+    const renderPassDescriptor: GPURenderPassDescriptor = {
+        colorAttachments: [
+            {
+                view: texture.createView(),
+                clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                loadOp: 'clear',
+                storeOp: 'store',
+            },
+        ],
+    };
+
+    const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+    passEncoder.setPipeline(pipeline);
+    passEncoder.draw(3, 1, 0, 0);
+    passEncoder.end();
+
+    device.queue.submit([commandEncoder.finish()]);
 }
 
 async function main() {
@@ -42,21 +58,14 @@ async function main() {
         },
     });
 
-    // Create render texture
-    const renderTargetTexture = device.createTexture({
-        size: [512, 512, 1],
-        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+    // Create texture
+    const texture = device.createTexture({
+        size: [256, 256],
         format: 'rgba8unorm',
-    });
-    const renderTargetTextureView = renderTargetTexture.createView();
-
-    // Create sampler
-    const sampler = device.createSampler({
-        magFilter: 'linear',
-        minFilter: 'linear',
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
     });
 
-    frame(device, pipeline, renderTargetTextureView);
+    frame(device, pipeline, texture);
 }
 
 main();
