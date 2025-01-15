@@ -1,13 +1,8 @@
-override is_red: bool;
-override color_r: f32 = 1.0;
-override color_g: f32 = 1.0;
-override color_b: f32 = 1.0;
+
+@group(0) @binding(1) var uTexture: texture_2d<f32>;
+@group(0) @binding(2) var uSampler: sampler;
 
 @fragment
-fn main() -> @location(0) vec4<f32> {
-    if (is_red) {
-        return vec4<f32>(1.0, 0.0, 0.0, 1.0);
-    } else {
-        return vec4<f32>(color_r, color_g, color_b, 1.0);
-    }
+fn main(@location(0) fragUV: vec2<f32>) -> @location(0) vec4<f32> {
+    return textureSample(uTexture, uSampler, fragUV);
 }
