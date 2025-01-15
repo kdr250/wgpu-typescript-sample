@@ -75,6 +75,20 @@ async function main() {
         },
     });
 
+    // Create input texture for storage
+    const sourceTexture = device.createTexture({
+        size: { width: 256, height: 256 },
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING,
+    });
+
+    // Create output texture for storage
+    const destinationTexture = device.createTexture({
+        size: { width: 256, height: 256 },
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.COPY_SRC | GPUTextureUsage.STORAGE_BINDING,
+    });
+
     frame(device, context, pipeline);
 }
 
