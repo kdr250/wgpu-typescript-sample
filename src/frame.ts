@@ -11,43 +11,58 @@ type DrawInput = {
     depthTexture: GPUTexture,
 };
 
+let commandEncoder: GPUCommandEncoder | undefined;
+let passEncoder: GPURenderPassEncoder | undefined;
+
 function draw(input: DrawInput, index: number) {
     const { device, context, pipeline, verticesBuffer, vertexCount, uniformBindGroup, uniformBuffer, depthTexture } = input;
 
-    const commandEncoder = device.createCommandEncoder();
-    const textureView = context.getCurrentTexture().createView();
-    const renderPassDescriptor: GPURenderPassDescriptor = {
-        colorAttachments: [
-            {
-                view: textureView,
-                clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-                loadOp: 'load',
-                storeOp: 'store',
+    if (!commandEncoder) {
+        commandEncoder = device.createCommandEncoder();
+    }
+
+    if (!passEncoder) {
+        const textureView = context.getCurrentTexture().createView();
+        const renderPassDescriptor: GPURenderPassDescriptor = {
+            colorAttachments: [
+                {
+                    view: textureView,
+                    clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                    loadOp: 'load',
+                    storeOp: 'store',
+                },
+            ],
+            depthStencilAttachment: {
+                view: depthTexture.createView(),
+                depthClearValue: 1.0,
+                depthLoadOp: 'clear',
+                depthStoreOp: 'store',
             },
-        ],
-        depthStencilAttachment: {
-            view: depthTexture.createView(),
-            depthClearValue: 1.0,
-            depthLoadOp: 'clear',
-            depthStoreOp: 'store',
-        },
-    };
+        };
+        passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+    }
 
     getTransformationMatrix(device, uniformBuffer, index);
-
-    const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
     passEncoder.setPipeline(pipeline);
     passEncoder.setBindGroup(0, uniformBindGroup);
     passEncoder.setVertexBuffer(0, verticesBuffer);
     passEncoder.draw(vertexCount);
-    passEncoder.end();
-
-    device.queue.submit([commandEncoder.finish()]);
 }
 
 function drawFrame(input: DrawInput) {
+    const { device } = input;
+
     for (let index = 0; index < 30 * 30; index++) {
         draw(input, index);
+    }
+
+    if (passEncoder) {
+        passEncoder.end();
+        passEncoder = undefined;
+    }
+    if (commandEncoder) {
+        device.queue.submit([commandEncoder.finish()]);
+        commandEncoder = undefined;
     }
 
     const callback = drawCallback(input);
