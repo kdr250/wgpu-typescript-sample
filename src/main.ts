@@ -111,6 +111,36 @@ async function main() {
 
         device.queue.submit([encoder.finish()]);
     }
+
+    // 出力用Canvas
+    const outputCanvas = document.getElementById('outputCanvas') as HTMLCanvasElement;
+    outputCanvas.width = size;
+    outputCanvas.height = size;
+    const outputContext = outputCanvas.getContext('2d') as CanvasRenderingContext2D;
+
+    // 出力バッファを作成
+    const outputBuffer = device.createBuffer({
+        size: imageBytes.byteLength,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+    });
+
+    {
+        // 出力用Textureから出力バッファにコピー
+        const encoder = device.createCommandEncoder();
+        encoder.copyTextureToBuffer(
+            { texture: destinationTexture },
+            { buffer: outputBuffer, bytesPerRow: size * 4 },
+            { width: size, height: size },
+        );
+
+        device.queue.submit([encoder.finish()]);
+    }
+
+    // 出力バッファをマップしてImageDataに変換
+    await outputBuffer.mapAsync(GPUMapMode.READ);
+    const outputArray = new Uint8Array(outputBuffer.getMappedRange());
+    const outImageData = new ImageData(new Uint8ClampedArray(outputArray), size, size);
+    outputContext.putImageData(outImageData, 0, 0);
 }
 
 main();
