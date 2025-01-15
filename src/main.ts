@@ -66,14 +66,38 @@ async function main() {
     new Uint8Array(imageBuffer.getMappedRange()).set(imageBytes);
     imageBuffer.unmap();
 
-    const encoder = device.createCommandEncoder();
-    encoder.copyBufferToTexture(
-        { buffer: imageBuffer, bytesPerRow: size * 4 },
-        { texture: sourceTexture },
-        { width: size, height: size },
-    );
+    // GPUバッファからGPUテクスチャに画像データをコピー
+    {
+        const encoder = device.createCommandEncoder();
+        encoder.copyBufferToTexture(
+            { buffer: imageBuffer, bytesPerRow: size * 4 },
+            { texture: sourceTexture },
+            { width: size, height: size },
+        );
 
-    device.queue.submit([encoder.finish()]);
+        device.queue.submit([encoder.finish()]);
+    }
+
+    // シェーダーモジュールを作成
+    const module = device.createShaderModule({ code: fragmentShader });
+
+    // パイプラインを作成
+    const pipeline = device.createComputePipeline({
+        layout: 'auto',
+        compute: {
+            module,
+            entryPoint: 'main',
+        },
+    });
+
+    // バインドグループを作成
+    const bindGroup = device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [
+            { binding: 0, resource: sourceTexture.createView() },
+            { binding: 1, resource: destinationTexture.createView() },
+        ],
+    });
 }
 
 main();
